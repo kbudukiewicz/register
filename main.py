@@ -178,7 +178,6 @@ class MyWindow(QWidget):
         int_value = 'INT'
         nl = ['AL', 'BL', 'CL', 'DL']
         nx = ['AX', 'BX', 'CX', 'DX']
-        dos = ['00h 21h', '02h 21h', '2Ah 21h', '05h 05h']
 
         self.text_comands = self.comand_line.toPlainText()
         self.list_words = self.text_comands.split("\n")
@@ -301,10 +300,6 @@ class MyWindow(QWidget):
                     self.dx_sub = format(int(''.join(filter(str.isdigit, self.list_words[i]))), "b")
                     self.dx = format((int(self.dx, 2) - int(self.dx_sub, 2)), "b")
                     self.NHD.setText(self.dx.zfill(8))
-
-                elif int_value in self.list_words[i]:
-                    if dos[0] in self.list_words[i]:
-                        sys.exit(app.exec_())
 
 
     def step_program(self):
