@@ -1,6 +1,11 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import sys
+import time
+import numpy as np
+import PIL
+import pyautogui
+import os
 
 
 class MyWindow(QWidget):
@@ -9,7 +14,7 @@ class MyWindow(QWidget):
 
         self.setWindowTitle('Register')
         self.setWindowIcon(QIcon('reg_file_icon.jpg'))
-        self.setFixedSize(370, 731)
+        self.setFixedSize(560, 731)
 
         self.al = '0'.zfill(8)
         self.bl = '0'.zfill(8)
@@ -126,7 +131,85 @@ class MyWindow(QWidget):
         self.name_file = QTextEdit(self)
         self.name_file.setGeometry(30, 620, 311, 41)
 
+        self.info_int = QLabel(self)
+        self.info_int.setGeometry(360, 70, 171, 261)
+
+        self.dos = ['00H 21H', '2AH 21H', '2CH 21H', '01H 21H', '02H 21H', '05H 05H', '03H 10H', '00H 40H', '00H 3FH',
+                    '00H 41H']
+        self.combo_box = QComboBox(self)
+        self.combo_box.setGeometry(350, 20, 171, 40)
+        self.combo_box.setEditable(True)
+        self.combo_box.addItems(self.dos)
+        self.combo_box.activated[str].connect(self.on_clicked)
+
+        self.information = QLabel("Information about Interrup:", self)
+        self.information.setGeometry(350, 50, 160, 50)
+
+        self.information_line = QTextEdit(self)
+        self.information_line.setGeometry(350, 100, 171, 231)
+
+        self.int_asci = QLabel("Output/Input of Interrup:", self)
+        self.int_asci.setGeometry(350, 350, 160, 50)
+
+        self.int_line = QTextEdit(self)
+        self.int_line.setGeometry(350, 400, 171, 141)
+
         self.show()
+
+    def on_clicked(self, value):
+        if value == '00H 21H':
+            text = 'Zakonczenie programu.'
+            self.information_line.setPlainText(text)
+
+        elif value == '2AH 21H':
+            text = 'Pobieranie aktualnej daty.\n' \
+                   'AL = dzień tygodnia\n' \
+                   'CL = rok\n' \
+                   'DH = miesiąc'
+            self.information_line.setPlainText(text)
+
+        elif value == '2CH 21H':
+            text = 'Pobierz czas.\n' \
+                   'CH = godzina\n' \
+                   'CL = minuta\n' \
+                   'DH = sekunda'
+            self.information_line.setPlainText(text)
+
+        elif value == '01H 21H':
+            text = 'Czytanie znaku z echem. Funkcja ta pobiera znak w standardowym strumieniu wejściowym. Przed ' \
+                   'wykonaniem funkcji wpisz znak do strumienia wejsciowego.Funkcja ' \
+                   'kopiuje go do standardowego strumienia wyjściowego. Po odebraniu znaku, funkcja w rejestrze AL ' \
+                   'zwraca kod ASCII tego znaku. '
+            self.information_line.setPlainText(text)
+
+        elif value == '02H 21H':
+            text = 'Wypisywanie znaku. Funkcja ta przesyła znak, którego kod ASCII znajduje się (w formie binarnej)  ' \
+                   'w rejestrze DL do standardowego strumienia wyjściowego. '
+            self.information_line.setPlainText(text)
+
+        elif value == '05H 05H':
+            text = 'Dokonanie zrzutu ekranu i zapisanie go w folderze programu.'
+            self.information_line.setPlainText(text)
+
+        elif value == '03H 10H':
+            text = 'Wypisanie aktualnej pozycji kursora.'
+            self.information_line.setPlainText(text)
+
+        elif value == '00H 40H':
+            text = 'Zapisanie do pliku (file.txt), w naszym programie zapisujemy historie programu.'
+            self.information_line.setPlainText(text)
+
+        elif value == '00H 3FH':
+            text = 'Wczytanie z pliku (file.txt). Wczytuje do strumienia wyjściowego.'
+            self.information_line.setPlainText(text)
+
+        else:
+            text = 'Usuniecie pliku (file.txt)'
+            self.information_line.setPlainText(text)
+
+    def print_information(self):
+        role = self.combo.currentData()
+        self.info_int.setText(role)
 
     def on_click(self):
         self.click += 1
@@ -178,6 +261,8 @@ class MyWindow(QWidget):
         int_value = 'INT'
         nl = ['AL', 'BL', 'CL', 'DL']
         nx = ['AX', 'BX', 'CX', 'DX']
+        dos = ['00H 21H', '2AH 21H', '2CH 21H', '01H 21H', '02H 21H', '05H 05H', '03H 10H', '00H 40H', '00H 3FH',
+               '00H 41H']
 
         self.text_comands = self.comand_line.toPlainText()
         self.list_words = self.text_comands.split("\n")
@@ -301,13 +386,91 @@ class MyWindow(QWidget):
                     self.dx = format((int(self.dx, 2) - int(self.dx_sub, 2)), "b")
                     self.NHD.setText(self.dx.zfill(8))
 
+            elif int_value in self.list_words[i]:
+                if dos[0] in self.list_words[i]:
+                    sys.exit(app.exec_())
+                elif dos[1] in self.list_words[i]:
+                    self.year = time.strftime("%Y", time.localtime())
+                    self.cl_add = format(int(''.join(filter(str.isdigit, self.year))), "b")
+                    self.cl = format((int(self.cl, 2) + int(self.cl_add, 2)), "b")
+                    self.NLC.setText(self.cl.zfill(8))
+
+                    self.month = time.strftime("%m", time.localtime())
+                    self.dx_add = format(int(''.join(filter(str.isdigit, self.month))), "b")
+                    self.dx = format((int(self.dx, 2) + int(self.dx_add, 2)), "b")
+                    self.NHD.setText(self.dx.zfill(8))
+
+                    self.day = time.strftime("%d", time.localtime())
+                    self.dl_add = format(int(''.join(filter(str.isdigit, self.day))), "b")
+                    self.dl = format((int(self.dl, 2) + int(self.dl_add, 2)), "b")
+                    self.NLD.setText(self.dl.zfill(8))
+
+                elif dos[2] in self.list_words[i]:
+                    self.hour = time.strftime("%H", time.localtime())
+                    self.cx_add = format(int(''.join(filter(str.isdigit, self.hour))), "b")
+                    self.cx = format((int(self.cx, 2) + int(self.cx_add, 2)), "b")
+                    self.NHC.setText(self.cx.zfill(8))
+
+                    self.minute = time.strftime("%M", time.localtime())
+                    self.cl_add = format(int(''.join(filter(str.isdigit, self.minute))), "b")
+                    self.cl = format((int(self.cl, 2) + int(self.cl_add, 2)), "b")
+                    self.NLC.setText(self.cl.zfill(8))
+
+                    self.seconds = time.strftime("%S", time.localtime())
+                    self.dx_add = format(int(''.join(filter(str.isdigit, self.seconds))), "b")
+                    self.dx = format((int(self.dx, 2) + int(self.dx_add, 2)), "b")
+                    self.NHD.setText(self.dx.zfill(8))
+
+                elif dos[3] in self.list_words[i]:
+                    self.sign = self.int_line.toPlainText()
+                    self.binary_sign = ''.join(format(ord(self.sign), '08b'))
+                    self.al = format((int(self.al, 2) + int(self.binary_sign, 2)), "b")
+                    self.NLA.setText(self.al.zfill(8))
+
+                elif dos[4] in self.list_words[i]:
+                    self.from_dl = self.dl
+                    bin_data = int(self.dl, 2)
+                    str_data = bin_data.to_bytes((bin_data.bit_length() + 7) // 8, 'big').decode()
+                    self.int_line.setPlainText(str_data)
+
+                elif dos[5] in self.list_words[i]:
+                    image = pyautogui.screenshot()
+                    image.save('image.jpg')
+
+                elif dos[6] in self.list_words[i]:
+                    position = str(pyautogui.position())
+                    self.int_line.setPlainText(position)
+
+                elif dos[7] in self.list_words[i]:
+                    self.text = self.history_register.toPlainText()
+                    file = open('file.txt', "w")
+                    file.write(self.text)
+                    file.close()
+
+                elif dos[8] in self.list_words[i]:
+                    self.text = self.history_register.toPlainText()
+                    if os.path.exists('file.txt'):
+                        file = open('file.txt', "r+")
+                        self.int_line.setPlainText(file.read())
+                    else:
+                        pass
+
+                elif dos[9] in self.list_words[i]:
+                    if os.path.exists('file.txt'):
+                        os.remove('file.txt')
+                    else:
+                        pass
 
     def step_program(self):
         move = 'MOV'
         add = 'ADD'
         sub = 'SUB'
+        int_value = 'INT'
+
         nl = ['AL', 'BL', 'CL', 'DL']
         nx = ['AX', 'BX', 'CX', 'DX']
+        dos = ['00H 21H', '2AH 21H', '2CH 21H', '01H 21H', '02H 21H', '05H 05H', '03H 10H', '00H 40H', '00H 3FH',
+               '00H 41H']
 
         i = self.click - 1
         self.text_comands = self.comand_line.toPlainText()
@@ -428,6 +591,82 @@ class MyWindow(QWidget):
                 self.dx_sub = format(int(''.join(filter(str.isdigit, self.list_words[i]))), "b")
                 self.dx = format((int(self.dx, 2) - int(self.dx_sub, 2)), "b")
                 self.NHD.setText(self.dx.zfill(8))
+
+        elif int_value in self.list_words[i]:
+            if dos[0] in self.list_words[i]:
+                sys.exit(app.exec_())
+            elif dos[1] in self.list_words[i]:
+                self.year = time.strftime("%Y", time.localtime())
+                self.cl_add = format(int(''.join(filter(str.isdigit, self.year))), "b")
+                self.cl = format((int(self.cl, 2) + int(self.cl_add, 2)), "b")
+                self.NLC.setText(self.cl.zfill(8))
+
+                self.month = time.strftime("%m", time.localtime())
+                self.dx_add = format(int(''.join(filter(str.isdigit, self.month))), "b")
+                self.dx = format((int(self.dx, 2) + int(self.dx_add, 2)), "b")
+                self.NHD.setText(self.dx.zfill(8))
+
+                self.day = time.strftime("%d", time.localtime())
+                self.dl_add = format(int(''.join(filter(str.isdigit, self.day))), "b")
+                self.dl = format((int(self.dl, 2) + int(self.dl_add, 2)), "b")
+                self.NLD.setText(self.dl.zfill(8))
+
+            elif dos[2] in self.list_words[i]:
+                self.hour = time.strftime("%H", time.localtime())
+                self.cx_add = format(int(''.join(filter(str.isdigit, self.hour))), "b")
+                self.cx = format((int(self.cx, 2) + int(self.cx_add, 2)), "b")
+                self.NHC.setText(self.cx.zfill(8))
+
+                self.minute = time.strftime("%M", time.localtime())
+                self.cl_add = format(int(''.join(filter(str.isdigit, self.minute))), "b")
+                self.cl = format((int(self.cl, 2) + int(self.cl_add, 2)), "b")
+                self.NLC.setText(self.cl.zfill(8))
+
+                self.seconds = time.strftime("%S", time.localtime())
+                self.dx_add = format(int(''.join(filter(str.isdigit, self.seconds))), "b")
+                self.dx = format((int(self.dx, 2) + int(self.dx_add, 2)), "b")
+                self.NHD.setText(self.dx.zfill(8))
+
+            elif dos[3] in self.list_words[i]:
+                self.sign = self.int_line.toPlainText()
+                self.binary_sign = ''.join(format(ord(self.sign), '08b'))
+                self.al = format((int(self.al, 2) + int(self.binary_sign, 2)), "b")
+                self.NLA.setText(self.al.zfill(8))
+
+            elif dos[4] in self.list_words[i]:
+                self.from_dl = self.dl
+                bin_data = int(self.dl, 2)
+                str_data = bin_data.to_bytes((bin_data.bit_length() + 7) // 8, 'big').decode()
+                self.int_line.setPlainText(str_data)
+
+            elif dos[5] in self.list_words[i]:
+                image = pyautogui.screenshot()
+                image.save('image.jpg')
+
+            elif dos[6] in self.list_words[i]:
+                position = str(pyautogui.position())
+                self.int_line.setPlainText(position)
+
+            elif dos[7] in self.list_words[i]:
+                self.text = self.history_register.toPlainText()
+                file = open('file.txt', "w")
+                file.write(self.text)
+                file.close()
+
+            elif dos[8] in self.list_words[i]:
+                self.text = self.history_register.toPlainText()
+                if os.path.exists('file.txt'):
+                    file = open('file.txt', "r+")
+                    self.int_line.setPlainText(file.read())
+                else:
+                    pass
+
+            elif dos[9] in self.list_words[i]:
+                if os.path.exists('file.txt'):
+                    os.remove('file.txt')
+                else:
+                    pass
+
 
 app = QApplication(sys.argv)
 window = MyWindow()
